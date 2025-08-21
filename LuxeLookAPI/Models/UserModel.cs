@@ -9,6 +9,9 @@ namespace LuxeLookAPI.Models
         [Key]
         public Guid? UserId { get; set; }
         public string? Email { get; set; }
+        public string? OTP { get; set; }
+        public string? Status { get; set; } = "N";
+        public DateTime OTP_Exp { get; set; }
         public string? PasswordHash { get; set; }
         public string? UserName { get; set; }
         public int? Age { get; set; }

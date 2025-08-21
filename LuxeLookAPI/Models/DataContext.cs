@@ -20,6 +20,11 @@ namespace LuxeLookAPI.Models
         public DbSet<OrderModel> Orders { get; set; }
         public DbSet<UserModel> Users { get; set; }
         public DbSet<PaymentModel> Payments { get; set; }
+        public DbSet<CategoryInstance> CategoryInstances { get; set; }
+        public DbSet<BrandModel> Brands { get; set; }
+        public DbSet<FavoriteModel> Favorites { get; set; }
+        public DbSet<AddToCartModel> AddToCarts { get; set; }
+
 
 
     }
