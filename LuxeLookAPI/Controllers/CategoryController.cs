@@ -1,46 +1,47 @@
 ﻿using LuxeLookAPI.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace LuxeLookAPI.Controllers
+namespace LuxeLookAPI.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+[Authorize]
+public class CategoryController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class CategoryController : ControllerBase
+    private readonly CategoryService _categoryService;
+
+    public CategoryController(CategoryService categoryService)
     {
-        private readonly CategoryService _categoryService;
+        _categoryService = categoryService;
+    }
 
-        public CategoryController(CategoryService categoryService)
+    // POST: api/Category
+    [HttpPost("add")]
+    public async Task<IActionResult> AddCategory( string request)
+    {
+        if (request == null || string.IsNullOrWhiteSpace(request))
+            return BadRequest(new { message = "Category name is required." });
+
+        try
         {
-            _categoryService = categoryService;
+            var category = await _categoryService.AddCategoryAsync(request);
+            return Ok(new
+            {
+                Status = 200,
+                Success = true,
+                Data = category
+            });
         }
-
-        // POST: api/Category
-        [HttpPost("add")]
-        public async Task<IActionResult> AddCategory( string request)
+        catch (Exception ex)
         {
-            if (request == null || string.IsNullOrWhiteSpace(request))
-                return BadRequest(new { message = "Category name is required." });
-
-            try
+            return StatusCode(500, new
             {
-                var category = await _categoryService.AddCategoryAsync(request);
-                return Ok(new
-                {
-                    Status = 200,
-                    Success = true,
-                    Data = category
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new
-                {
-                    Status = 500,
-                    Success = false,
-                    Message = ex.Message
-                });
-            }
+                Status = 500,
+                Success = false,
+                Message = ex.Message
+            });
         }
     }
 }

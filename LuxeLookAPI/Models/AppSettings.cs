@@ -1,7 +1,6 @@
-﻿namespace LuxeLookAPI.Models
+﻿namespace LuxeLookAPI.Models;
+
+public class AppSettings
 {
-    public class AppSettings
-    {
-        public string ConnectionString { get; set; }
-    }
+    public string ConnectionString { get; set; }
 }

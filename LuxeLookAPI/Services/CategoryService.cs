@@ -1,37 +1,36 @@
 ﻿using LuxeLookAPI.Models;
 using System;
 
-namespace LuxeLookAPI.Services
+namespace LuxeLookAPI.Services;
+
+public class CategoryService
 {
-    public class CategoryService
+
+    private readonly DataContext _context;
+
+    public CategoryService(DataContext context)
     {
+        _context = context;
+    }
 
-        private readonly DataContext _context;
+    // Add new category
+    public async Task<CategoryModel> AddCategoryAsync(string catName)
+    {
+        if (string.IsNullOrWhiteSpace(catName))
+            throw new ArgumentException("Category name cannot be empty");
 
-        public CategoryService(DataContext context)
+        var category = new CategoryModel
         {
-            _context = context;
-        }
+            CatId = Guid.NewGuid(),
+            CatName = catName,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            ActiveFlag = true
+        };
 
-        // Add new category
-        public async Task<CategoryModel> AddCategoryAsync(string catName)
-        {
-            if (string.IsNullOrWhiteSpace(catName))
-                throw new ArgumentException("Category name cannot be empty");
+        _context.Categories.Add(category); // tblCategory DbSet
+        await _context.SaveChangesAsync();
 
-            var category = new CategoryModel
-            {
-                CatId = Guid.NewGuid(),
-                CatName = catName,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                ActiveFlag = true
-            };
-
-            _context.Categories.Add(category); // tblCategory DbSet
-            await _context.SaveChangesAsync();
-
-            return category;
-        }
+        return category;
     }
 }

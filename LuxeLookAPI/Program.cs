@@ -15,6 +15,7 @@ ServiceManager.SetServiceInfo(builder.Services, appSettings);
 // Add services
 builder.Services.AddControllers();
 builder.Services.AddSingleton<CommonTokenGenerator>();
+builder.Services.AddHttpContextAccessor();
 
 // ✅ Add Authentication with JWT Bearer
 builder.Services.AddAuthentication(options =>

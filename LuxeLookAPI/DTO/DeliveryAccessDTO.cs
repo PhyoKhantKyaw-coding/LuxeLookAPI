@@ -1,8 +1,7 @@
-﻿namespace LuxeLookAPI.DTO
+﻿namespace LuxeLookAPI.DTO;
+
+public class DeliveryAccessDTO
 {
-    public class DeliveryAccessDTO
-    {
-        public Guid? OrderId { get; set; }
-        public Guid? DeliveryId { get; set; }
-    }
+    public Guid? OrderId { get; set; }
+    public Guid? DeliveryId { get; set; }
 }
