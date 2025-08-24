@@ -3,13 +3,14 @@
 public class GetProductDTO
 {
     public Guid? ProductId { get; set; }
-    public String? CatInstanceName { get; set; }
-    public String? BrandName { get; set; }
+    public string? CatInstanceName { get; set; }
+    public string? BrandName { get; set; }
     public string? ProductName { get; set; }
     public string? ProductDescription { get; set; }
     public int? StockQTY { get; set; }
     public decimal? Cost { get; set; }
     public decimal? Price { get; set; }
+    public string? CurrencySymbol { get; set; }
     public string? ProductImageUrl { get; set; }
 }
 public class GetProductByCatIdDTO

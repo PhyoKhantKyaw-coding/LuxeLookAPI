@@ -13,11 +13,11 @@ public class ServiceManager
             options.UseSqlServer(appSettings.ConnectionString);
         });
         services.AddScoped<ProductService>();
-        services.AddScoped<DeliveryService>();
         services.AddScoped<OrderService>();
         services.AddScoped<UserService>();
         services.AddScoped<CategoryService>();
         services.AddScoped<CommonTokenReader>();
+        services.AddScoped<DashboardService>();
 
     }
 }

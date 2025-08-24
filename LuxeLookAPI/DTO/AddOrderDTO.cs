@@ -12,12 +12,8 @@ public class AddOrderDTO
     public string? OrderPlace { get; set; }
     public string? OrderStartPoint { get; set; }
     public string? OrderEndPoint { get; set; }
-    public Guid? UserId { get; set; }
-    public Guid? DeliveryId { get; set; }
     public string? PaymentType { get; set; }
-    public decimal? PaymentAmount { get; set; }
     public decimal? DeliFee { get; set; }
-    public string? Status { get; set; }
 }
 public class AddToCardDTO
 {

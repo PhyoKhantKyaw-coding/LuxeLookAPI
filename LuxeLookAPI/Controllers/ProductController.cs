@@ -8,7 +8,7 @@ namespace LuxeLookAPI.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize]
+
 public class ProductController : ControllerBase
 {
     private readonly ProductService _productService;
@@ -19,11 +19,12 @@ public class ProductController : ControllerBase
 
     // GET: api/Product
     [HttpGet]
-    public async Task<IActionResult> GetAllProducts()
+    public async Task<IActionResult> GetAllProducts([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string language = "us")
     {
         try
         {
-            var products = await _productService.GetAllProductsAsync();
+            var products = await _productService.GetAllProductsAsync(pageNumber, pageSize, language);
+
             if (products == null || !products.Any())
                 return Ok(new ResponseDTO
                 {
@@ -52,11 +53,12 @@ public class ProductController : ControllerBase
 
     // GET: api/Product/byCategory/{catId}
     [HttpGet("byCategory/{catId}")]
-    public async Task<IActionResult> GetProductsByCategory(Guid catId)
+    public async Task<IActionResult> GetProductsByCategory(Guid catId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string language = "us")
     {
         try
         {
-            var products = await _productService.GetProductsByCatIdAsync(catId);
+            var products = await _productService.GetProductsByCatIdAsync(catId, pageNumber, pageSize, language);
+
             if (products.Products == null || !products.Products.Any())
                 return Ok(new ResponseDTO
                 {
@@ -82,6 +84,7 @@ public class ProductController : ControllerBase
             });
         }
     }
+
 
     // GET: api/Product/byCatInstance/{catId}
     [HttpGet("withCatInstance/{catId}")]

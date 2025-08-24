@@ -30,12 +30,17 @@ public class OrderService
 
         try
         {
-            // Save Payment
+            decimal totalCost = 0;
+            decimal totalProfit = 0;
+            int totalQty = 0;
+            decimal totalAmount = 0;
+
+            // Create Payment first (amount set later)
             var payment = new PaymentModel
             {
                 PaymentId = Guid.NewGuid(),
                 PaymentType = dto.PaymentType,
-                PaymentAmount = dto.PaymentAmount,
+                PaymentAmount = 0,
                 DeliFee = dto.DeliFee,
                 Status = "Pending",
                 UserId = userId.Value,
@@ -44,7 +49,7 @@ public class OrderService
             };
             await _context.Payments.AddAsync(payment);
 
-            // Create Order first
+            // Create Order
             var order = new OrderModel
             {
                 OrderId = Guid.NewGuid(),
@@ -52,25 +57,34 @@ public class OrderService
                 OrderPlace = dto.OrderPlace,
                 OrderStartPoint = dto.OrderStartPoint,
                 OrderEndPoint = dto.OrderEndPoint,
-                Status = dto.Status ?? "ordered",
+                Status = "ordered",
                 UserId = userId.Value,
-                DeliveryId = dto.DeliveryId,
                 PaymentId = payment.PaymentId,
                 CreatedAt = DateTime.UtcNow,
                 ActiveFlag = true
             };
             await _context.Orders.AddAsync(order);
 
-            decimal totalCost = 0;
-            decimal totalProfit = 0;
-            int totalQty = 0;
-
-            // Save OrderDetails
+            // Save OrderDetails & Update Stock
             foreach (var detail in dto.OrderDetails)
             {
                 var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductId == detail.ProductId);
                 if (product == null) continue;
 
+                // 🔹 Check stock availability
+                if (product.StockQTY < detail.Qty)
+                {
+                    EmailHelper.SendStockAlertEmail("admin_email@example.com", product.ProductName, detail.Qty ?? 0, product.StockQTY ?? 0);
+
+                    // Optionally: skip this product or stop the order
+                    throw new InvalidOperationException($"Not enough stock for {product.ProductName}");
+                }
+
+                // 🔹 Deduct stock
+                product.StockQTY -= detail.Qty;
+                _context.Products.Update(product);
+
+                // Calculate financials
                 var cost = product.Cost * detail.Qty;
                 var profit = (product.Price - product.Cost) * detail.Qty;
                 var amount = product.Price * detail.Qty;
@@ -78,6 +92,7 @@ public class OrderService
                 totalCost += (decimal)cost;
                 totalProfit += (decimal)profit;
                 totalQty += (int)detail.Qty;
+                totalAmount += (decimal)amount;
 
                 var orderDetail = new OrderDetailModel
                 {
@@ -94,16 +109,25 @@ public class OrderService
                 await _context.OrderDetails.AddAsync(orderDetail);
             }
 
-            // Update order totals
+            // Update order & payment values
             order.TotalQTY = totalQty;
             order.TotalCost = totalCost;
             order.TotalProfit = totalProfit;
-            order.TotalAmount = dto.PaymentAmount; // or you could recalc from details if needed
+            order.TotalAmount = totalAmount + (dto.DeliFee ?? 0);
 
-            _context.Orders.Update(order);
+            payment.PaymentAmount = order.TotalAmount;
 
+            // Save everything
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
+
+            // 🔹 Send confirmation email
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+            if (user != null && !string.IsNullOrEmpty(user.Email))
+            {
+                EmailHelper.SendOrderSuccessEmail(user.Email, user.UserName ?? "Customer", order.OrderId ?? Guid.Empty);
+            }
+
             return true;
         }
         catch
@@ -112,6 +136,9 @@ public class OrderService
             return false;
         }
     }
+
+
+
 
     // 2. Add To Cart
     public async Task<bool> AddToCartAsync(AddToCardDTO dto)
@@ -171,18 +198,22 @@ public class OrderService
     }
 
     // 4. Get All Orders
-    public async Task<List<GetOrderDTO>> GetAllOrdersAsync()
+    public async Task<List<GetOrderDTO>> GetAllOrdersAsync(int pageNumber = 1, int pageSize = 10)
     {
-        // Read user info from token
         var (userId, roleName, _) = _tokenReader.GetUserFromContext();
         if (userId == null)
             return new List<GetOrderDTO>();
 
-        // Start query
         var ordersQuery = from o in _context.Orders
                           join p in _context.Payments
                               on o.PaymentId equals p.PaymentId into op
                           from pay in op.DefaultIfEmpty()
+                          join u in _context.Users
+                              on o.UserId equals u.UserId into ou
+                          from user in ou.DefaultIfEmpty()
+                          join d in _context.Users
+                              on o.DeliveryId equals d.UserId into od
+                          from delivery in od.DefaultIfEmpty()
                           where o.ActiveFlag == true
                           select new GetOrderDTO
                           {
@@ -196,31 +227,45 @@ public class OrderService
                               TotalProfit = o.TotalProfit,
                               TotalCost = o.TotalCost,
                               Status = o.Status,
-                              UserName = o.UserId != null ? _context.Users
-                                             .Where(u => u.UserId == o.UserId)
-                                             .Select(u => u.UserName)
-                                             .FirstOrDefault() : null,
-                              DeliveryName = o.DeliveryId != null ? _context.Users
-                                             .Where(d => d.UserId == o.DeliveryId)
-                                             .Select(d => d.UserName)
-                                             .FirstOrDefault() : null,
+                              UserName = user != null ? user.UserName : null,
+                              DeliveryName = delivery != null ? delivery.UserName : null,
                               PaymentType = pay.PaymentType,
                               PaymentAmount = pay.PaymentAmount,
                               DeliFee = pay.DeliFee,
                               PaymentStatus = pay.Status
                           };
 
-        // Filter based on role
-        if (roleName != null && roleName.ToLower() != "admin")
+        // Role-based filter
+        if (!string.IsNullOrEmpty(roleName) && roleName.ToLower() != "admin")
         {
-            ordersQuery = ordersQuery.Where(o => o.UserName ==
-                               _context.Users.Where(u => u.UserId == userId)
-                                             .Select(u => u.UserName)
-                                             .FirstOrDefault());
+            if (roleName.ToLower() == "user")
+            {
+                ordersQuery = ordersQuery.Where(o => o.UserName ==
+                                                     _context.Users
+                                                             .Where(u => u.UserId == userId)
+                                                             .Select(u => u.UserName)
+                                                             .FirstOrDefault());
+            }
+            else if (roleName.ToLower() == "delivery")
+            {
+                ordersQuery = ordersQuery.Where(o => o.DeliveryName ==
+                                                     _context.Users
+                                                             .Where(u => u.UserId == userId)
+                                                             .Select(u => u.UserName)
+                                                             .FirstOrDefault());
+            }
         }
+
+        // Pagination
+        ordersQuery = ordersQuery
+            .OrderByDescending(o => o.OrderDate)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize);
 
         return await ordersQuery.ToListAsync();
     }
+
+
 
     // 5. Get Order Details by OrderId
     public async Task<List<OrderDetailModel>> GetOrderDetailsByOrderIdAsync(Guid orderId)
@@ -290,7 +335,7 @@ public class OrderService
 
         // Get current user from token
         var (userId, role, _) = _tokenReader.GetUserFromContext();
-        if (userId == null || role != "Delivery") // Only Delivery role allowed
+        if (userId == null || role != "Delivery")
             return false;
 
         // Get the order
@@ -303,7 +348,57 @@ public class OrderService
         order.UpdatedAt = DateTime.UtcNow;
 
         _context.Orders.Update(order);
-        return await _context.SaveChangesAsync() > 0;
+        var saved = await _context.SaveChangesAsync() > 0;
+
+        if (saved)
+        {
+            // 🔹 Notify user
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == order.UserId);
+            if (user != null && !string.IsNullOrEmpty(user.Email))
+            {
+                EmailHelper.SendDeliveryAccessEmail(user.Email, user.UserName ?? "Customer", order.OrderId ?? Guid.Empty);
+            }
+        }
+
+        return saved;
     }
+    public async Task<List<GetOrderDTO>> GetAllOrdersByStatusAsync(string status)
+    {
+        var ordersQuery = from o in _context.Orders
+                          join p in _context.Payments
+                              on o.PaymentId equals p.PaymentId into op
+                          from pay in op.DefaultIfEmpty()
+                          join u in _context.Users
+                              on o.UserId equals u.UserId into ou
+                          from user in ou.DefaultIfEmpty()
+                          join d in _context.Users
+                              on o.DeliveryId equals d.UserId into od
+                          from delivery in od.DefaultIfEmpty()
+                          where o.ActiveFlag == true && o.Status == status
+                          select new GetOrderDTO
+                          {
+                              OrderId = o.OrderId,
+                              OrderDate = o.OrderDate,
+                              OrderPlace = o.OrderPlace,
+                              OrderStartPoint = o.OrderStartPoint,
+                              OrderEndPoint = o.OrderEndPoint,
+                              TotalAmount = o.TotalAmount,
+                              TotalQTY = o.TotalQTY,
+                              TotalProfit = o.TotalProfit,
+                              TotalCost = o.TotalCost,
+                              Status = o.Status,
+                              UserName = user != null ? user.UserName : null,
+                              DeliveryName = delivery != null ? delivery.UserName : null,
+                              PaymentType = pay.PaymentType,
+                              PaymentAmount = pay.PaymentAmount,
+                              DeliFee = pay.DeliFee,
+                              PaymentStatus = pay.Status
+                          };
+
+        return await ordersQuery
+            .OrderByDescending(o => o.OrderDate)
+            .ToListAsync();
+    }
+
 
 }

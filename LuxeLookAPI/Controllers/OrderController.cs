@@ -69,7 +69,7 @@ public class OrderController : ControllerBase
     }
 
     // 4. Get All Orders
-    [HttpGet("all")]
+    [HttpGet("allwithuserid")]
     public async Task<IActionResult> GetAllOrders()
     {
         var orders = await _orderService.GetAllOrdersAsync();
@@ -78,6 +78,16 @@ public class OrderController : ControllerBase
 
         return Ok(new ResponseDTO { Status = APIStatus.Successful, Message = Messages.Result, Data = orders });
     }
+    [HttpGet("all")]
+    public async Task<IActionResult> GetAllOrderswithstatus( string status)
+    {
+        var orders = await _orderService.GetAllOrdersByStatusAsync(status);
+        if (orders == null || !orders.Any())
+            return Ok(new ResponseDTO { Status = APIStatus.Successful, Message = Messages.NoData, Data = null });
+
+        return Ok(new ResponseDTO { Status = APIStatus.Successful, Message = Messages.Result, Data = orders });
+    }
+
 
     // 5. Get Order Details by OrderId
     [HttpGet("{orderId}/details")]
@@ -103,6 +113,7 @@ public class OrderController : ControllerBase
             : StatusCode(500, new ResponseDTO { Status = APIStatus.SystemError, Message = Messages.UpdateFail });
     }
     //7.access delivery
+    [Authorize(Roles = "Delivery")]
     [HttpPost("delivery-access")]
     public async Task<IActionResult> DeliveryAccess([FromBody] DeliveryAccessDTO dto)
     {

@@ -13,59 +13,97 @@ public class ProductService
     }
 
     // 1. Get all products
-    public async Task<List<GetProductDTO>> GetAllProductsAsync()
+    // 1. Get all products with pagination + currency
+    public async Task<List<GetProductDTO>> GetAllProductsAsync(int pageNumber, int pageSize, string language)
     {
-        var products = from p in _context.Products
-                       join c in _context.CategoryInstances
-                           on p.CatInstanceId equals c.CatInstanceId into pc
-                       from c in pc.DefaultIfEmpty()
-                       join b in _context.Brands
-                           on p.BrandId equals b.BrandId into pb
-                       from b in pb.DefaultIfEmpty()
-                       where p.ActiveFlag == true
-                       select new GetProductDTO
-                       {
-                           ProductId = p.ProductId,
-                           CatInstanceName = c != null ? c.CatInstanceName : null,
-                           BrandName = b != null ? b.BrandName : null,
-                           ProductName = p.ProductName,
-                           ProductDescription = p.ProductDescription,
-                           StockQTY = p.StockQTY,
-                           Cost = p.Cost,
-                           Price = p.Price,
-                           ProductImageUrl = p.ProductImageUrl
-                       };
+        var query = from p in _context.Products
+                    join c in _context.CategoryInstances
+                        on p.CatInstanceId equals c.CatInstanceId into pc
+                    from c in pc.DefaultIfEmpty()
+                    join b in _context.Brands
+                        on p.BrandId equals b.BrandId into pb
+                    from b in pb.DefaultIfEmpty()
+                    where p.ActiveFlag == true
+                    select new
+                    {
+                        p,
+                        CatInstanceName = c != null ? c.CatInstanceName : null,
+                        BrandName = b != null ? b.BrandName : null
+                    };
 
-        return await products.ToListAsync();
+        // Apply pagination
+        var products = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        // Convert currency
+        return products.Select(x =>
+        {
+            var (convertedCost, symbol) = CurrencyHelper.Convert(language, x.p.Cost ?? 0);
+            var (convertedPrice, _) = CurrencyHelper.Convert(language, x.p.Price ?? 0);
+
+            return new GetProductDTO
+            {
+                ProductId = x.p.ProductId,
+                CatInstanceName = x.CatInstanceName,
+                BrandName = x.BrandName,
+                ProductName = x.p.ProductName,
+                ProductDescription = x.p.ProductDescription,
+                StockQTY = x.p.StockQTY,
+                Cost = convertedCost,
+                Price = convertedPrice,
+                CurrencySymbol = symbol,
+                ProductImageUrl = x.p.ProductImageUrl
+            };
+        }).ToList();
     }
 
-    // 2. Get products by Category Id
-    public async Task<GetProductByCatIdDTO> GetProductsByCatIdAsync(Guid catId)
+
+    // 2. Get products by Category Id with pagination + currency
+    public async Task<GetProductByCatIdDTO> GetProductsByCatIdAsync(Guid catId, int pageNumber, int pageSize, string language)
     {
-        var products = from p in _context.Products
-                       join c in _context.CategoryInstances
-                           on p.CatInstanceId equals c.CatInstanceId
-                       join b in _context.Brands
-                           on p.BrandId equals b.BrandId into pb
-                       from b in pb.DefaultIfEmpty()
-                       where c.CatId == catId && p.ActiveFlag == true
-                       select new GetProductDTO
-                       {
-                           ProductId = p.ProductId,
-                           CatInstanceName = c.CatInstanceName,
-                           BrandName = b != null ? b.BrandName : null,
-                           ProductName = p.ProductName,
-                           ProductDescription = p.ProductDescription,
-                           StockQTY = p.StockQTY,
-                           Cost = p.Cost,
-                           Price = p.Price,
-                           ProductImageUrl = p.ProductImageUrl
-                       };
+        var query = from p in _context.Products
+                    join c in _context.CategoryInstances
+                        on p.CatInstanceId equals c.CatInstanceId
+                    join b in _context.Brands
+                        on p.BrandId equals b.BrandId into pb
+                    from b in pb.DefaultIfEmpty()
+                    where c.CatId == catId && p.ActiveFlag == true
+                    select new
+                    {
+                        p,
+                        CatInstanceName = c.CatInstanceName,
+                        BrandName = b != null ? b.BrandName : null
+                    };
+
+        var products = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
 
         return new GetProductByCatIdDTO
         {
             CatId = catId,
-            Products = await products.ToListAsync()
+            Products = products.Select(x =>
+            {
+                var (convertedCost, symbol) = CurrencyHelper.Convert(language, x.p.Cost ?? 0);
+                var (convertedPrice, _) = CurrencyHelper.Convert(language, x.p.Price ?? 0);
+
+                return new GetProductDTO
+                {
+                    ProductId = x.p.ProductId,
+                    CatInstanceName = x.CatInstanceName,
+                    BrandName = x.BrandName,
+                    ProductName = x.p.ProductName,
+                    ProductDescription = x.p.ProductDescription,
+                    StockQTY = x.p.StockQTY,
+                    Cost = convertedCost,
+                    Price = convertedPrice,
+                    CurrencySymbol = symbol,
+                    ProductImageUrl = x.p.ProductImageUrl
+                };
+            }).ToList()
         };
     }
 
