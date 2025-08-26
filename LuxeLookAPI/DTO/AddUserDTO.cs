@@ -9,4 +9,9 @@ public class AddUserDTO
     public string? RoleName { get; set; }
     public string? ProfileImageUrl { get; set; }
 }
+public class ResetPasswordDTO
+{
+    public string? Email { get; set; }
+    public string? NewPassword { get; set; }
+}
 

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Net;
 using System.Net.Mail;
 using System.Text;
-
+using Google.Apis.Auth;
 namespace LuxeLookAPI.Services;
 
 public class UserService
@@ -19,8 +19,57 @@ public class UserService
         _tokenGenerator = tokenGenerator;
     }
 
-    // Add new user (Register)
-    public async Task<UserModel> AddUserAsync(AddUserDTO dto)
+public async Task<LoginResponseDTO?> GoogleLoginAsync(string idToken)
+{
+    try
+    {
+        // Validate Google token
+        var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, new GoogleJsonWebSignature.ValidationSettings
+        {
+            Audience = new[] { "420768243280-6qmf00jarp804bf7pqafi5iis32vph12.apps.googleusercontent.com" } // Replace with your Google Client ID
+        });
+
+        // Check if user exists
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == payload.Email);
+
+        if (user == null)
+        {
+            // New user → create account
+            user = new UserModel
+            {
+                UserId = Guid.NewGuid(),
+                Email = payload.Email,
+                UserName = payload.Name,
+                ProfileImageUrl = payload.Picture,
+                RoleName = "User",
+                ActiveFlag = true,
+                Status = "Y", // Mark verified since Google already verified email
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+        }
+
+        // Generate JWT
+        var token = _tokenGenerator.Create(user);
+
+        return new LoginResponseDTO
+        {
+            Token = token,
+            UserName = user.UserName,
+            RoleName = user.RoleName
+        };
+    }
+    catch (Exception ex)
+    {
+        // Invalid Google token
+        return null;
+    }
+}
+
+// Add new user (Register)
+public async Task<UserModel> AddUserAsync(AddUserDTO dto)
     {
         if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
             throw new Exception("Email already exists.");
@@ -200,4 +249,37 @@ public class UserService
             RoleName = user.RoleName
         };
     }
+    public async Task<bool> ForgotPassword(string email)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email && u.Status == "Y" && u.ActiveFlag);
+        if (user == null)
+            return false;
+        // Generate OTP
+        var otpCode = GenerateOTP();
+        user.OTP = otpCode;
+        user.OTP_Exp = DateTime.Now.AddMinutes(5);
+        _context.Users.Update(user);
+        await _context.SaveChangesAsync();
+        // Send OTP email
+        bool emailSent = SendOTPEmail(user.Email!, user.UserName ?? "User", otpCode);
+        return emailSent;
+    }
+    public async Task<bool> ResetPassword(ResetPasswordDTO dto)
+    {
+        var user = await _context.Users
+            .FirstOrDefaultAsync(x => x.Email == dto.Email && x.Status == "Y");
+        if (user == null)
+        {
+            return false;
+        }
+       
+        CommonAuthentication.CreatePasswordHash(dto.NewPassword!, out byte[] passwordHash);
+        user.PasswordHash = Convert.ToBase64String(passwordHash);
+        user.UpdatedAt = DateTime.UtcNow;
+        _context.Users.Update(user);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
 }
+

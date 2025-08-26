@@ -94,6 +94,32 @@ public class UserController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] string email)
+    {
+        try
+        {
+            var result = await _userService.ForgotPassword(email);
+            return Ok(new { message = result });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(ResetPasswordDTO dto)
+    {
+        try
+        {
+            var result = await _userService.ResetPassword(dto);
+            return Ok(new { message = result });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
     [Authorize]
     [HttpGet("me")]
     public IActionResult GetMyInfo()
@@ -104,6 +130,21 @@ public class UserController : ControllerBase
             return Unauthorized();
 
         return Ok(new { userId, role, userName });
+    }
+    [HttpPost("google-login")]
+    public async Task<IActionResult> GoogleLogin(string dto)
+    {
+        try
+        {
+            var response = await _userService.GoogleLoginAsync(dto);
+            if (response == null)
+                return Unauthorized(new { message = "Google login failed" });
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
 }
