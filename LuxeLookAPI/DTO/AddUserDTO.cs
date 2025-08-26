@@ -9,3 +9,4 @@ public class AddUserDTO
     public string? RoleName { get; set; }
     public string? ProfileImageUrl { get; set; }
 }
+

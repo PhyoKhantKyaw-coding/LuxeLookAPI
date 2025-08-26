@@ -16,16 +16,13 @@ namespace LuxeLookAPI.Controllers
             _dashboardService = dashboardService;
         }
 
-        // GET: api/Dashboard?status=month&monthName=January
-        [HttpGet]
-        public async Task<IActionResult> GetDashboard([FromQuery] string status, [FromQuery] string? monthName = null)
+        // GET: api/Dashboard
+        [HttpGet("Dashboard")]
+        public async Task<IActionResult> GetDashboard()
         {
-            if (string.IsNullOrWhiteSpace(status))
-                return BadRequest(new { message = "Status parameter is required (day, week, month, all)" });
-
             try
             {
-                var dashboard = await _dashboardService.GetDashboardDataAsync(status, monthName);
+                var dashboard = await _dashboardService.GetDashboardDataAsync();
                 return Ok(new
                 {
                     Status = 200,

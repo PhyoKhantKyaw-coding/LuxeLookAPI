@@ -67,11 +67,11 @@ public class UserController : ControllerBase
         return Ok(user);
     }
     [HttpPost("verify-email")]
-    public async Task<IActionResult> VerifyEmail([FromBody] string email, string otp)
+    public async Task<IActionResult> VerifyEmail(emaildto dto)
     {
         try
         {
-            var result = await _userService.VerifyEmail(email, otp);
+            var result = await _userService.VerifyEmail(dto.Email, dto.OTP);
             return Ok(new { message = result });
         }
         catch (Exception ex)
