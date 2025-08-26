@@ -2,6 +2,7 @@
 using LuxeLookAPI.Share;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Net.Http.Headers;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -41,6 +42,16 @@ builder.Services.AddAuthentication(options =>
 
 // Swagger + Bearer auth UI
 builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("MyAllowSpecificOrigins",
+        builder => builder.WithOrigins("http://localhost:5173")
+        .WithMethods("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS")
+        .WithHeaders(HeaderNames.Accept, HeaderNames.ContentType, HeaderNames.Authorization)
+        .AllowCredentials());
+});
+
 builder.Services.AddSwaggerGen(c =>
 {
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
@@ -78,6 +89,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("MyAllowSpecificOrigins");
 
 // ✅ Add Authentication + Authorization
 app.UseAuthentication();
