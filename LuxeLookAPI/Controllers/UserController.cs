@@ -132,13 +132,14 @@ public class UserController : ControllerBase
         return Ok(new { userId, role, userName });
     }
     [HttpPost("google-login")]
-    public async Task<IActionResult> GoogleLogin(string dto)
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginDTO dto)
     {
         try
         {
-            var response = await _userService.GoogleLoginAsync(dto);
+            var response = await _userService.GoogleLoginAsync(dto.Token);
             if (response == null)
                 return Unauthorized(new { message = "Google login failed" });
+
             return Ok(response);
         }
         catch (Exception ex)
@@ -146,5 +147,6 @@ public class UserController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
 
 }

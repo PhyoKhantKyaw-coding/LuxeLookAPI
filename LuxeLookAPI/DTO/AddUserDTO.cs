@@ -14,4 +14,9 @@ public class ResetPasswordDTO
     public string? Email { get; set; }
     public string? NewPassword { get; set; }
 }
+public class GoogleLoginDTO
+{
+    public string Token { get; set; } = string.Empty;
+}
+
 

@@ -26,7 +26,7 @@ public async Task<LoginResponseDTO?> GoogleLoginAsync(string idToken)
         // Validate Google token
         var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, new GoogleJsonWebSignature.ValidationSettings
         {
-            Audience = new[] { "420768243280-6qmf00jarp804bf7pqafi5iis32vph12.apps.googleusercontent.com" } // Replace with your Google Client ID
+            Audience = new[] { "758570961714-gbt9gun7g7dm1kfbm5b8oe8ujl9ti5te.apps.googleusercontent.com" } // Replace with your Google Client ID
         });
 
         // Check if user exists
