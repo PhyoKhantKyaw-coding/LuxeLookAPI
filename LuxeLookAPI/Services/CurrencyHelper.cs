@@ -14,7 +14,7 @@
 
         private static readonly Dictionary<string, string> CurrencySymbols = new()
     {
-        { "us", "$" },
+        { "us", "$" }, 
         { "uk", "£" },
         { "thailand", "฿" },
         { "japan", "¥" },
