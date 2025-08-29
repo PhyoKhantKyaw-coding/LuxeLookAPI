@@ -170,9 +170,89 @@ public class OrderService
 
         return await _context.SaveChangesAsync() > 0;
     }
+public async Task<getatcDTO> GetAllAddToCart(string currency = "us")
+{
+    var (userId, _, _) = _tokenReader.GetUserFromContext();
+    if (userId == null)
+        return new getatcDTO(); // empty list
 
-    // 3. Add To Favorite
-    public async Task<bool> AddToFavoriteAsync(AddToFavoriteDTO dto)
+    var data = await (from atc in _context.AddToCarts
+                      join p in _context.Products
+                          on atc.ProductId equals p.ProductId
+                      where atc.UserId == userId
+                      select new
+                      {
+                          p.ProductName,
+                          atc.Qty,
+                          Price = p.Price ?? 0,
+                          p.ProductImageUrl
+                      })
+                      .ToListAsync();
+
+    // Apply currency conversion
+    var convertedData = data.Select(d =>
+    {
+        var (convertedPrice, symbol) = CurrencyHelper.Convert(currency, d.Price);
+        return new getproductatcDTO
+        {
+            productName = d.ProductName,
+            qty = d.Qty ?? 0,
+            eachprice = convertedPrice,
+            totalprice = convertedPrice * d.Qty ?? 0,
+            producturl = d.ProductImageUrl
+        };
+    }).ToList();
+
+    return new getatcDTO
+    {
+        productatc = convertedData
+    };
+}
+
+public async Task<getfavoriteDTO> GetAllFavorite(string currency = "us")
+{
+    var (userId, _, _) = _tokenReader.GetUserFromContext();
+    if (userId == null)
+        return new getfavoriteDTO(); // empty list
+
+    var data = await (from f in _context.Favorites
+                      join p in _context.Products
+                          on f.ProductId equals p.ProductId
+                      join c in _context.Categories
+                          on p.CatInstanceId equals c.CatId
+                      where f.UserId == userId
+                      select new
+                      {
+                          p.ProductName,
+                          CategoryName = c.CatName,
+                          Price = p.Price ?? 0,
+                          p.ProductImageUrl,
+                          p.ProductDescription
+                      })
+                      .ToListAsync();
+
+    var convertedData = data.Select(d =>
+    {
+        var (convertedPrice, symbol) = CurrencyHelper.Convert(currency, d.Price);
+        return new getproductfavoriteDTO
+        {
+            productName = d.ProductName,
+            categoryName = d.CategoryName,
+            producturl = d.ProductImageUrl,
+            productdescription = d.ProductDescription
+        };
+    }).ToList();
+
+    return new getfavoriteDTO
+    {
+        productfavorite = convertedData
+    };
+}
+
+
+
+// 3. Add To Favorite
+public async Task<bool> AddToFavoriteAsync(AddToFavoriteDTO dto)
     {
         if (dto == null || dto.OrderDetails == null || !dto.OrderDetails.Any())
             return false;

@@ -67,6 +67,29 @@ public class OrderController : ControllerBase
             ? Ok(new ResponseDTO { Status = APIStatus.Successful, Message = Messages.AddSucess })
             : StatusCode(500, new ResponseDTO { Status = APIStatus.SystemError, Message = Messages.ErrorWhileFetchingData });
     }
+    [HttpGet("getallcart")]
+    public async Task<IActionResult> GetAllCart([FromQuery] string currency = "us")
+    {
+        var data = await _orderService.GetAllAddToCart(currency);
+        return Ok(new ResponseDTO
+        {
+            Status = APIStatus.Successful,
+            Message = Messages.Successfully,
+            Data = data
+        });
+    }
+    [HttpGet("getallfavorite")]
+    public async Task<IActionResult> GetAllFavorite([FromQuery] string currency = "us")
+    {
+        var data = await _orderService.GetAllFavorite(currency);
+        return Ok(new ResponseDTO
+        {
+            Status = APIStatus.Successful,
+            Message = Messages.Successfully,
+            Data = data
+        });
+    }
+
 
     // 4. Get All Orders
     [HttpGet("allwithuserid")]
@@ -74,7 +97,7 @@ public class OrderController : ControllerBase
     {
         var orders = await _orderService.GetAllOrdersAsync();
         if (orders == null || !orders.Any())
-            return Ok(new ResponseDTO { Status = APIStatus.Successful, Message = Messages.NoData, Data = null });
+            return Ok(new ResponseDTO { Status = APIStatus.Successful, Message = Messages.NoData, Data = new List<object>() });
 
         return Ok(new ResponseDTO { Status = APIStatus.Successful, Message = Messages.Result, Data = orders });
     }
@@ -83,7 +106,7 @@ public class OrderController : ControllerBase
     {
         var orders = await _orderService.GetAllOrdersByStatusAsync(status);
         if (orders == null || !orders.Any())
-            return Ok(new ResponseDTO { Status = APIStatus.Successful, Message = Messages.NoData, Data = null });
+            return Ok(new ResponseDTO { Status = APIStatus.Successful, Message = Messages.NoData, Data = new List<object>() });
 
         return Ok(new ResponseDTO { Status = APIStatus.Successful, Message = Messages.Result, Data = orders });
     }
@@ -95,7 +118,7 @@ public class OrderController : ControllerBase
     {
         var details = await _orderService.GetOrderDetailsByOrderIdAsync(orderId);
         if (details == null || !details.Any())
-            return Ok(new ResponseDTO { Status = APIStatus.Successful, Message = Messages.NoData, Data = null });
+            return Ok(new ResponseDTO { Status = APIStatus.Successful, Message = Messages.NoData, Data = new List<object>() });
 
         return Ok(new ResponseDTO { Status = APIStatus.Successful, Message = Messages.Result, Data = details });
     }

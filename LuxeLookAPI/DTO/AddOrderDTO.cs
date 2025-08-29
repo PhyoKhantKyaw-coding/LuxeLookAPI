@@ -24,3 +24,26 @@ public class AddToFavoriteDTO
 {
     public List<OrderDetailDTO>? OrderDetails { get; set; }
 }
+public class getproductatcDTO
+{
+    public string productName { get; set; }
+    public int qty { get; set; }
+    public decimal totalprice { get; set; }
+    public decimal eachprice { get; set; }
+    public string producturl { get; set; }
+}
+public class getatcDTO
+{
+    public List<getproductatcDTO>? productatc { get; set; }
+}
+public class getproductfavoriteDTO
+{
+    public string productName { get; set; }
+    public string categoryName { get; set; }
+    public string producturl { get; set; }
+    public string productdescription { get; set; }
+}
+public class getfavoriteDTO
+{
+    public List<getproductfavoriteDTO>? productfavorite { get; set; }
+}
