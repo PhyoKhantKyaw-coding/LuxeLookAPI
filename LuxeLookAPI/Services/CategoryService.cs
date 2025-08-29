@@ -11,7 +11,10 @@ namespace LuxeLookAPI.Services
         {
             _context = context;
         }
-
+        public async Task<List<CategoryInstance>> GetCategoryInstances()
+        {
+            return await _context.CategoryInstances.ToListAsync();
+        }
         // Add new category
         public async Task<CategoryModel> AddCategoryAsync(string catName)
         {

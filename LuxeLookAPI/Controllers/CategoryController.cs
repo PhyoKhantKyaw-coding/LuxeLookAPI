@@ -1,6 +1,8 @@
-﻿using LuxeLookAPI.Services;
+﻿using LuxeLookAPI.Models;
+using LuxeLookAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace LuxeLookAPI.Controllers
 {
@@ -10,10 +12,11 @@ namespace LuxeLookAPI.Controllers
     public class CategoryController : ControllerBase
     {
         private readonly CategoryService _categoryService;
-
-        public CategoryController(CategoryService categoryService)
+        private readonly DataContext _context;
+        public CategoryController(CategoryService categoryService, DataContext dataContext)
         {
             _categoryService = categoryService;
+            _context = dataContext;
         }
 
         // POST: api/Category/add
@@ -66,7 +69,19 @@ namespace LuxeLookAPI.Controllers
                 return StatusCode(500, new { Status = 500, Success = false, Message = ex.Message });
             }
         }
-
+        [HttpGet("GetAllCategoryInstances")]    
+        public async Task<IActionResult> GetAllCategoryInstances()
+        {
+            try
+            {
+                var instances = await _categoryService.GetCategoryInstances();
+                return Ok(new { Status = 200, Success = true, Data = instances });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Status = 500, Success = false, Message = ex.Message });
+            }
+        }
         // GET: api/Category/all
         [HttpGet("all")]
         public async Task<IActionResult> GetAllCategories()
@@ -75,6 +90,19 @@ namespace LuxeLookAPI.Controllers
             {
                 var categories = await _categoryService.GetAllCategoriesAsync();
                 return Ok(new { Status = 200, Success = true, Data = categories });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Status = 500, Success = false, Message = ex.Message });
+            }
+        }
+        [HttpGet("GetAllBrands")]
+        public async Task<IActionResult> GetAllBrands()
+        {
+            try
+            {
+                var brands = await _context.Brands.ToListAsync();
+                return Ok(new { Status = 200, Success = true, Data = brands });
             }
             catch (Exception ex)
             {

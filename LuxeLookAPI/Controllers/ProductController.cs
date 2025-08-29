@@ -1,14 +1,12 @@
 ﻿using LuxeLookAPI.DTO;
 using LuxeLookAPI.Services;
 using LuxeLookAPI.Share;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LuxeLookAPI.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-
 public class ProductController : ControllerBase
 {
     private readonly ProductService _productService;
@@ -19,7 +17,7 @@ public class ProductController : ControllerBase
 
     // GET: api/Product
     [HttpGet]
-    public async Task<IActionResult> GetAllProducts([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string language = "us")
+    public async Task<IActionResult> GetAllProducts(int pageNumber = 1, int pageSize = 10, string language = "us")
     {
         try
         {
@@ -85,8 +83,7 @@ public class ProductController : ControllerBase
         }
     }
 
-
-    // GET: api/Product/byCatInstance/{catId}
+    // GET: api/Product/withCatInstance/{catId}
     [HttpGet("withCatInstance/{catId}")]
     public async Task<IActionResult> GetProductsWithCatInstance(Guid catId)
     {
@@ -118,23 +115,140 @@ public class ProductController : ControllerBase
             });
         }
     }
+
+    // GET: api/Product/{id}
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetProductById(Guid id)
+    {
+        try
+        {
+            var product = await _productService.GetProductByIdAsync(id);
+            if (product == null)
+                return NotFound(new ResponseDTO
+                {
+                    Status = APIStatus.Successful,
+                    Message = Messages.NoData,
+                    Data = null
+                });
+
+            return Ok(new ResponseDTO
+            {
+                Status = APIStatus.Successful,
+                Message = Messages.Result,
+                Data = product
+            });
+        }
+        catch
+        {
+            return StatusCode(500, new ResponseDTO
+            {
+                Status = APIStatus.SystemError,
+                Message = Messages.ErrorWhileFetchingData,
+                Data = null
+            });
+        }
+    }
+
+    // POST: api/Product
+    [HttpPost]
+    public async Task<IActionResult> AddProduct([FromBody] AddProductDTO dto)
+    {
+        try
+        {
+            var result = await _productService.AddProductAsync(dto);
+            if (!result)
+                return BadRequest(new ResponseDTO
+                {
+                    Status = APIStatus.Error,
+                    Data = null
+                });
+
+            return Ok(new ResponseDTO
+            {
+                Status = APIStatus.Successful,
+                Data = dto
+            });
+        }
+        catch
+        {
+            return StatusCode(500, new ResponseDTO
+            {
+                Status = APIStatus.SystemError,
+                Data = null
+            });
+        }
+    }
+
+    // PUT: api/Product
+    [HttpPut]
+    public async Task<IActionResult> UpdateProduct([FromBody] UpdateProductDTO dto)
+    {
+        try
+        {
+            var result = await _productService.UpdateProductAsync(dto);
+            if (!result)
+                return NotFound(new ResponseDTO
+                {
+                    Status = APIStatus.Successful,
+                    Message = Messages.NoData,
+                    Data = null
+                });
+
+            return Ok(new ResponseDTO
+            {
+                Status = APIStatus.Successful,
+                Message = Messages.AddSucess,
+                Data = dto
+            });
+        }
+        catch
+        {
+            return StatusCode(500, new ResponseDTO
+            {
+                Status = APIStatus.SystemError,
+                Data = null
+            });
+        }
+    }
+
+    // DELETE: api/Product/{id}
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteProduct(Guid id)
+    {
+        try
+        {
+            var result = await _productService.DeleteProductAsync(id);
+            if (!result)
+                return NotFound(new ResponseDTO
+                {
+                    Status = APIStatus.Successful,
+                    Message = Messages.NoData,
+                    Data = null
+                });
+
+            return Ok(new ResponseDTO
+            {
+                Status = APIStatus.Successful,
+                Data = id
+            });
+        }
+        catch
+        {
+            return StatusCode(500, new ResponseDTO
+            {
+                Status = APIStatus.SystemError,
+                Data = null
+            });
+        }
+    }
+
+    // POST: api/Product/upload
     [HttpPost("upload")]
-    [Consumes("multipart/form-data")] // <-- tells Swagger this is form-data
-    public async Task<IActionResult> Upload( IFormFile image)
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> Upload(IFormFile image)
     {
         var uploader = new ImageUploader();
         var imageUrl = await uploader.UploadImageAsync(image);
         return Ok(new { url = imageUrl });
     }
-
-
-    //[HttpPost("upload")]
-    //public async Task<IActionResult> Upload([FromForm] IFormFile image)
-    //{
-    //    var uploader = new ImageUploader();
-    //    var imageUrl = await uploader.UploadImageAsync(image);
-    //    return Ok(new { url = imageUrl });
-    //}
-
-
 }

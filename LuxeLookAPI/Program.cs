@@ -1,6 +1,7 @@
 ﻿using LuxeLookAPI.Models;
 using LuxeLookAPI.Share;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Net.Http.Headers;
 using System.Text;
@@ -80,7 +81,12 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
-
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(Directory.GetCurrentDirectory(),"wwwroot", "images")),
+    RequestPath = "/api/images" // Match the URL path
+});
 // Pipeline
 if (app.Environment.IsDevelopment())
 {

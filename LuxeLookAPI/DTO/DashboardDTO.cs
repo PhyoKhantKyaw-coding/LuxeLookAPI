@@ -23,20 +23,20 @@
 
     public class ChartDataPoint
     {
-        public string? Label { get; set; } // e.g., "Apr 8"
+        public string? Label { get; set; } // e.g., "Apr 8" to "Apr 16" current month and day and previous week 
         public decimal? Value { get; set; } // Sales amount
     }
 
     public class AreaChartData
     {
-        public string? Month { get; set; } // e.g., "Jan"
+        public string? Month { get; set; } // e.g., "Jan" to "Dec"
         public int? TotalOrders { get; set; }
         public int? CompletedOrders { get; set; }
     }
 
     public class DonutChartData
     {
-        public string? Label { get; set; } // Status like "ordered", "completed"
+        public string? Label { get; set; } // Status like "ordered", "completed" ,delivering ,cancel
         public int? Value { get; set; } // Count of orders
     }
 
