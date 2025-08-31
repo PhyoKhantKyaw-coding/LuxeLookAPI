@@ -17,6 +17,27 @@ public class OrderController : ControllerBase
         _orderService = orderService;
     }
 
+
+    [HttpGet("getvoucher/{orderId}")]
+    public async Task<IActionResult> GetVoucherByOrderId(Guid orderId)
+    {
+        var voucherDto = await _orderService.GetVoucherByOrderIdAsync(orderId);
+
+        if (voucherDto == null)
+            return NotFound(new ResponseDTO
+            {
+                Status = APIStatus.Error,
+                Message = "Order not found"
+            });
+
+        return Ok(new ResponseDTO
+        {
+            Status = APIStatus.Successful,
+            Message = "Voucher fetched successfully",
+            Data = voucherDto
+        });
+    }
+
     // 1. Add Order
     [HttpPost("add")]
     public async Task<IActionResult> AddOrder([FromBody] AddOrderDTO dto)

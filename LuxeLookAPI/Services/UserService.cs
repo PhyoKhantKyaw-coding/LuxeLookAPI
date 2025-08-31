@@ -68,16 +68,28 @@ public async Task<LoginResponseDTO?> GoogleLoginAsync(string idToken)
     }
 }
 
-// Add new user (Register)
-public async Task<UserModel> AddUserAsync(AddUserDTO dto)
+    // Add new user (Register)
+    public async Task<UserModel> AddUserAsync(AddUserDTO dto)
     {
         if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
             throw new Exception("Email already exists.");
 
         CommonAuthentication.CreatePasswordHash(dto.Password!, out byte[] passwordHash);
 
-        // Generate OTP
-        var otpCode = GenerateOTP();
+        string? otpCode = null;
+        string status = "N";
+
+        // If role is Admin or Delivery, skip OTP
+        if (dto.RoleName == "Admin" || dto.RoleName == "Delivery")
+        {
+            status = "Y"; // verified automatically
+        }
+        else
+        {
+            // Generate OTP for normal users
+            otpCode = GenerateOTP();
+            status = "N";
+        }
 
         var user = new UserModel
         {
@@ -90,21 +102,25 @@ public async Task<UserModel> AddUserAsync(AddUserDTO dto)
             ProfileImageUrl = dto.ProfileImageUrl,
             CreatedAt = DateTime.UtcNow,
             ActiveFlag = true,
-            Status = "N", // Not verified
+            Status = status,
             OTP = otpCode,
-            OTP_Exp = DateTime.Now.AddMinutes(5)
+            OTP_Exp = otpCode != null ? DateTime.Now.AddMinutes(5) : null
         };
 
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
-        // Send OTP email
-        bool emailSent = SendOTPEmail(user.Email!, user.UserName ?? "User", otpCode);
-        if (!emailSent)
-            throw new Exception("Failed to send OTP email.");
+        // Send OTP email only for normal users
+        if (otpCode != null)
+        {
+            bool emailSent = SendOTPEmail(user.Email!, user.UserName ?? "User", otpCode);
+            if (!emailSent)
+                throw new Exception("Failed to send OTP email.");
+        }
 
         return user;
     }
+
     private static string GenerateOTP()
     {
         Random random = new Random();

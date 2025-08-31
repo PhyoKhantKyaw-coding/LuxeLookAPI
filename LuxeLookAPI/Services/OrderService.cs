@@ -407,6 +407,46 @@ public async Task<bool> AddToFavoriteAsync(AddToFavoriteDTO dto)
 
         return await ordersQuery.ToListAsync();
     }
+    public async Task<OrderWithVoucherDTO?> GetVoucherByOrderIdAsync(Guid orderId)
+    {
+        // Get the order
+        var order = await _context.Orders
+            .FirstOrDefaultAsync(o => o.OrderId == orderId);
+
+        if (order == null) return null;
+
+        // Get order details
+        var orderDetails = await (from od in _context.OrderDetails
+                                  join p in _context.Products
+                                  on od.ProductId equals p.ProductId
+                                  where od.OrderId == orderId
+                                  select new OrderDetailWithVoucherDTO
+                                  {
+                                      OrderDetailId = od.OrderDetailId,
+                                      ProductName = p.ProductName,
+                                      Qty = od.Qty ?? 0,
+                                      Price = od.Price ?? 0,
+                                      DiscountAmount = od.Profit ?? 0 // treat Profit as discount
+                                  }).ToListAsync();
+
+        // Calculate total discount from order details
+        var totalDiscount = orderDetails.Sum(od => od.DiscountAmount);
+
+        var dto = new OrderWithVoucherDTO
+        {
+            OrderId = order.OrderId,
+            TotalAmount = order.TotalAmount ?? 0,
+            DiscountAmount = totalDiscount, // sum of all discounts in details
+            DiscountPercent = order.TotalAmount.HasValue && totalDiscount > 0
+                ? (totalDiscount / order.TotalAmount.Value) * 100
+                : 0,
+            Description = "Derived from order details", // optional note
+            OrderDetails = orderDetails
+        };
+
+        return dto;
+    }
+
 
     public async Task<bool> AssignOrderToDeliveryAsync(DeliveryAccessDTO dto)
     {
