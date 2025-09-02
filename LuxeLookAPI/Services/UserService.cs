@@ -296,6 +296,28 @@ public async Task<LoginResponseDTO?> GoogleLoginAsync(string idToken)
         await _context.SaveChangesAsync();
         return true;
     }
+    public async Task<Supplier> AddSupplierAsync(string dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto))
+            throw new ArgumentException("Supplier name cannot be empty");
+
+        var supplier = new Supplier
+        {
+            SupplierId = Guid.NewGuid(),
+            SupplierName = dto
+        };
+
+        _context.Suppliers.Add(supplier);
+        await _context.SaveChangesAsync();
+
+        return supplier;
+    }
+
+    // Get All Suppliers
+    public async Task<List<Supplier>> GetAllSuppliersAsync()
+    {
+        return await Task.FromResult(_context.Suppliers.ToList());
+    }
 
 }
 

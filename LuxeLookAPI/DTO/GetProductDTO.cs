@@ -12,6 +12,7 @@ public class GetProductDTO
     public decimal? Price { get; set; }
     public string? CurrencySymbol { get; set; }
     public string? ProductImageUrl { get; set; }
+    public string? SupplierName { get; set; }
 }
 public class GetProductByCatIdDTO
 {

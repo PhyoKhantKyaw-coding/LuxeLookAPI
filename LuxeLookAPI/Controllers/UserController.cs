@@ -147,6 +147,36 @@ public class UserController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+    [HttpPost("addsupplier")]
+    public async Task<IActionResult> AddSupplier(string name)
+    {
+        if (name == null || string.IsNullOrWhiteSpace(name))
+            return BadRequest(new { message = "Supplier name is required." });
 
+        try
+        {
+            var supplier = await _userService.AddSupplierAsync(name);
+            return Ok(new { Status = 200, Success = true, Data = supplier });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Status = 500, Success = false, Message = ex.Message });
+        }
+    }
+
+    // GET: api/Supplier/all
+    [HttpGet("allsupplier")]
+    public async Task<IActionResult> GetAllSuppliers()
+    {
+        try
+        {
+            var suppliers = await _userService.GetAllSuppliersAsync();
+            return Ok(new { Status = 200, Success = true, Data = suppliers });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Status = 500, Success = false, Message = ex.Message });
+        }
+    }
 
 }

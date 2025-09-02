@@ -12,8 +12,7 @@ public class ProductService
         _context = context;
     }
 
-    // 1. Get all products
-    // 1. Get all products with pagination + currency
+    // 1. Get all products with pagination + currency + supplier
     public async Task<List<GetProductDTO>> GetAllProductsAsync(int pageNumber, int pageSize, string language)
     {
         var query = from p in _context.Products
@@ -23,21 +22,23 @@ public class ProductService
                     join b in _context.Brands
                         on p.BrandId equals b.BrandId into pb
                     from b in pb.DefaultIfEmpty()
+                    join s in _context.Suppliers
+                        on p.SupplierId equals s.SupplierId into ps
+                    from s in ps.DefaultIfEmpty()
                     where p.ActiveFlag == true
                     select new
                     {
                         p,
                         CatInstanceName = c != null ? c.CatInstanceName : null,
-                        BrandName = b != null ? b.BrandName : null
+                        BrandName = b != null ? b.BrandName : null,
+                        SupplierName = s != null ? s.SupplierName : null
                     };
 
-        // Apply pagination
         var products = await query
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
 
-        // Convert currency
         return products.Select(x =>
         {
             var (convertedCost, symbol) = CurrencyHelper.Convert(language, x.p.Cost ?? 0);
@@ -48,6 +49,7 @@ public class ProductService
                 ProductId = x.p.ProductId,
                 CatInstanceName = x.CatInstanceName,
                 BrandName = x.BrandName,
+                SupplierName = x.SupplierName,
                 ProductName = x.p.ProductName,
                 ProductDescription = x.p.ProductDescription,
                 StockQTY = x.p.StockQTY,
@@ -59,8 +61,7 @@ public class ProductService
         }).ToList();
     }
 
-
-    // 2. Get products by Category Id with pagination + currency
+    // 2. Get products by Category Id with pagination + currency + supplier
     public async Task<GetProductByCatIdDTO> GetProductsByCatIdAsync(Guid catId, int pageNumber, int pageSize, string language)
     {
         var query = from p in _context.Products
@@ -69,12 +70,16 @@ public class ProductService
                     join b in _context.Brands
                         on p.BrandId equals b.BrandId into pb
                     from b in pb.DefaultIfEmpty()
+                    join s in _context.Suppliers
+                        on p.SupplierId equals s.SupplierId into ps
+                    from s in ps.DefaultIfEmpty()
                     where c.CatId == catId && p.ActiveFlag == true
                     select new
                     {
                         p,
                         CatInstanceName = c.CatInstanceName,
-                        BrandName = b != null ? b.BrandName : null
+                        BrandName = b != null ? b.BrandName : null,
+                        SupplierName = s != null ? s.SupplierName : null
                     };
 
         var products = await query
@@ -95,6 +100,7 @@ public class ProductService
                     ProductId = x.p.ProductId,
                     CatInstanceName = x.CatInstanceName,
                     BrandName = x.BrandName,
+                    SupplierName = x.SupplierName,
                     ProductName = x.p.ProductName,
                     ProductDescription = x.p.ProductDescription,
                     StockQTY = x.p.StockQTY,
@@ -107,7 +113,7 @@ public class ProductService
         };
     }
 
-    // 3. Get products grouped by Category Instance
+    // 3. Get products grouped by Category Instance + supplier
     public async Task<List<GetProductWithCatInstanceByCatIDDTO>> GetProductsWithCatInstanceAsync(Guid catId)
     {
         return await _context.CategoryInstances
@@ -126,7 +132,7 @@ public class ProductService
             }).ToListAsync();
     }
 
-    // 4. Add Product
+    // 4. Add Product (with SupplierId)
     public async Task<bool> AddProductAsync(AddProductDTO dto)
     {
         var product = new ProductModel
@@ -134,6 +140,7 @@ public class ProductService
             ProductId = Guid.NewGuid(),
             CatInstanceId = dto.CatInstanceId,
             BrandId = dto.BrandId,
+            SupplierId = dto.SupplierId,  // <--- added
             ProductName = dto.ProductName,
             ProductDescription = dto.ProductDescription,
             StockQTY = dto.StockQTY,
@@ -148,7 +155,7 @@ public class ProductService
         return await _context.SaveChangesAsync() > 0;
     }
 
-    // 5. Update Product
+    // 5. Update Product (with SupplierId)
     public async Task<bool> UpdateProductAsync(UpdateProductDTO dto)
     {
         var product = await _context.Products
@@ -158,6 +165,7 @@ public class ProductService
 
         product.CatInstanceId = dto.CatInstanceId;
         product.BrandId = dto.BrandId;
+        product.SupplierId = dto.SupplierId; // <--- added
         product.ProductName = dto.ProductName;
         product.ProductDescription = dto.ProductDescription;
         product.StockQTY = dto.StockQTY;
@@ -170,7 +178,7 @@ public class ProductService
         return await _context.SaveChangesAsync() > 0;
     }
 
-    // 6. Delete Product (soft delete with ActiveFlag)
+    // 6. Delete Product (soft delete, no change needed)
     public async Task<bool> DeleteProductAsync(Guid productId)
     {
         var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductId == productId);
@@ -183,7 +191,7 @@ public class ProductService
         return await _context.SaveChangesAsync() > 0;
     }
 
-    // 7. Get Product by Id
+    // 7. Get Product by Id (include SupplierName)
     public async Task<GetProductDTO?> GetProductByIdAsync(Guid productId)
     {
         var product = await (from p in _context.Products
@@ -193,12 +201,16 @@ public class ProductService
                              join b in _context.Brands
                                  on p.BrandId equals b.BrandId into pb
                              from b in pb.DefaultIfEmpty()
+                             join s in _context.Suppliers
+                                 on p.SupplierId equals s.SupplierId into ps
+                             from s in ps.DefaultIfEmpty()
                              where p.ProductId == productId && p.ActiveFlag == true
                              select new GetProductDTO
                              {
                                  ProductId = p.ProductId,
                                  CatInstanceName = c != null ? c.CatInstanceName : null,
                                  BrandName = b != null ? b.BrandName : null,
+                                 SupplierName = s != null ? s.SupplierName : null,
                                  ProductName = p.ProductName,
                                  ProductDescription = p.ProductDescription,
                                  StockQTY = p.StockQTY,

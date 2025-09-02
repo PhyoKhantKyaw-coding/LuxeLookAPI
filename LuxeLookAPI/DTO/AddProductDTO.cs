@@ -10,4 +10,5 @@ public class AddProductDTO
     public decimal? Cost { get; set; }
     public decimal? Price { get; set; }
     public string? ProductImageUrl { get; set; }
+    public Guid? SupplierId { get; set; }
 }
