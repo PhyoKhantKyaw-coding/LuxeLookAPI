@@ -18,6 +18,7 @@ public class ServiceManager
         services.AddScoped<CategoryService>();
         services.AddScoped<CommonTokenReader>();
         services.AddScoped<DashboardService>();
+        services.AddScoped<BookingService>();
 
     }
 }

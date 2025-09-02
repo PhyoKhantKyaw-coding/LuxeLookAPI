@@ -1,4 +1,5 @@
-﻿using LuxeLookAPI.Models;
+﻿using LuxeLookAPI.DTO;
+using LuxeLookAPI.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace LuxeLookAPI.Services
@@ -74,5 +75,56 @@ namespace LuxeLookAPI.Services
                 .Where(c => c.ActiveFlag)
                 .ToListAsync();
         }
+        public async Task<CategoryModel> AddCategoryWithInstancesAsync(AddCategoryWithInstancesDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.CatName))
+                throw new ArgumentException("Category name cannot be empty");
+
+            var category = new CategoryModel
+            {
+                CatId = Guid.NewGuid(),
+                CatName = dto.CatName,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                ActiveFlag = true
+            };
+
+            _context.Categories.Add(category);
+
+            // add instances
+            foreach (var instanceName in dto.InstanceNames)
+            {
+                if (!string.IsNullOrWhiteSpace(instanceName))
+                {
+                    var instance = new CategoryInstance
+                    {
+                        CatInstanceId = Guid.NewGuid(),
+                        CatId = category.CatId,
+                        CatInstanceName = instanceName
+                    };
+                    _context.CategoryInstances.Add(instance);
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return category;
+        }
+        public async Task<BrandModel> AddBrandAsync(string brandName)
+        {
+            if (string.IsNullOrWhiteSpace(brandName))
+                throw new ArgumentException("Brand name cannot be empty");
+
+            var brand = new BrandModel
+            {
+                BrandId = Guid.NewGuid(),
+                BrandName = brandName,
+            };
+
+            _context.Brands.Add(brand);
+            await _context.SaveChangesAsync();
+
+            return brand;
+        }
+
     }
 }

@@ -1,4 +1,5 @@
-﻿using LuxeLookAPI.Models;
+﻿using LuxeLookAPI.DTO;
+using LuxeLookAPI.Models;
 using LuxeLookAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -103,6 +104,40 @@ namespace LuxeLookAPI.Controllers
             {
                 var brands = await _context.Brands.ToListAsync();
                 return Ok(new { Status = 200, Success = true, Data = brands });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Status = 500, Success = false, Message = ex.Message });
+            }
+        }
+        [HttpPost("add-with-instances")]
+        public async Task<IActionResult> AddCategoryWithInstances([FromBody] AddCategoryWithInstancesDto request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.CatName))
+                return BadRequest(new { message = "Category name is required." });
+
+            try
+            {
+                var category = await _categoryService.AddCategoryWithInstancesAsync(request);
+                return Ok(new { Status = 200, Success = true, Data = category });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Status = 500, Success = false, Message = ex.Message });
+            }
+        }
+
+        // ✅ Add Brand
+        [HttpPost("add-brand")]
+        public async Task<IActionResult> AddBrand([FromBody] string brandName)
+        {
+            if (string.IsNullOrWhiteSpace(brandName))
+                return BadRequest(new { message = "Brand name is required." });
+
+            try
+            {
+                var brand = await _categoryService.AddBrandAsync(brandName);
+                return Ok(new { Status = 200, Success = true, Data = brand });
             }
             catch (Exception ex)
             {

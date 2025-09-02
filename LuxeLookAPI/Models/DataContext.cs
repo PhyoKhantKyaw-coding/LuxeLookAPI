@@ -24,7 +24,9 @@ public class DataContext : DbContext
     public DbSet<BrandModel> Brands { get; set; }
     public DbSet<FavoriteModel> Favorites { get; set; }
     public DbSet<AddToCartModel> AddToCarts { get; set; }
-
+    public DbSet<Booking> Bookings { get; set; }
+    public DbSet<Doctor> Doctors { get; set; }
+    public DbSet<Supplier> Suppliers { get; set; }
 
 
 }
