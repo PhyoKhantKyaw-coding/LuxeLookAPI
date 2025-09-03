@@ -47,7 +47,7 @@ namespace LuxeLookAPI.Services
             var (userId, _, _) = _tokenReader.GetUserFromContext();
 
             var result = (from b in _context.Bookings
-                          join d in _context.Doctors on b.DoctorId equals d.DoctorId
+                          join d in _context.Doctor on b.DoctorId equals d.DoctorId
                           join u in _context.Users on b.UserId equals u.UserId // if you have Users table
                           where b.UserId == userId
                           select new BookingResponseDto
@@ -81,7 +81,7 @@ namespace LuxeLookAPI.Services
                 email = dto.Email
             };
 
-            _context.Doctors.Add(doctor);
+            _context.Doctor.Add(doctor);
             _context.SaveChanges();
 
             return doctor;
@@ -90,7 +90,7 @@ namespace LuxeLookAPI.Services
         // Get All Doctors
         public List<Doctor> GetAllDoctors()
         {
-            return _context.Doctors.ToList();
+            return _context.Doctor.ToList();
         }
     }
 }

@@ -1,5 +1,8 @@
-﻿namespace LuxeLookAPI.Models
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace LuxeLookAPI.Models
 {
+    [Table("Doctor")]
     public class Doctor
     {
         public Guid DoctorId { get; set; }

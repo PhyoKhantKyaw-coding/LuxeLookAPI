@@ -111,7 +111,7 @@ namespace LuxeLookAPI.Controllers
             }
         }
         [HttpPost("add-with-instances")]
-        public async Task<IActionResult> AddCategoryWithInstances([FromBody] AddCategoryWithInstancesDto request)
+        public async Task<IActionResult> AddCategoryWithInstances( AddCategoryWithInstancesDto request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.CatName))
                 return BadRequest(new { message = "Category name is required." });
@@ -129,7 +129,7 @@ namespace LuxeLookAPI.Controllers
 
         // ✅ Add Brand
         [HttpPost("add-brand")]
-        public async Task<IActionResult> AddBrand([FromBody] string brandName)
+        public async Task<IActionResult> AddBrand( string brandName)
         {
             if (string.IsNullOrWhiteSpace(brandName))
                 return BadRequest(new { message = "Brand name is required." });

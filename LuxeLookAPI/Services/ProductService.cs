@@ -221,4 +221,19 @@ public class ProductService
 
         return product;
     }
+    // 8. Get Supplier History (Supplier Name + Product Count)
+    public async Task<List<SupplierHistoryDTO>> GetSupplierHistoryAsync()
+    {
+        var query = from s in _context.Suppliers
+                    join p in _context.Products
+                        on s.SupplierId equals p.SupplierId into sp
+                    select new SupplierHistoryDTO
+                    {
+                        SupplierName = s.SupplierName,
+                        ProductCount = sp.Count(p => p.ActiveFlag == true)
+                    };
+
+        return await query.ToListAsync();
+    }
+
 }

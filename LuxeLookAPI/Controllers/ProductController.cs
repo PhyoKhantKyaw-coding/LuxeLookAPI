@@ -251,4 +251,17 @@ public class ProductController : ControllerBase
         var imageUrl = await uploader.UploadImageAsync(image);
         return Ok(new { url = imageUrl });
     }
+    [HttpGet("Supplierhistory")]
+    public async Task<IActionResult> GetSupplierHistory()
+    {
+        try
+        {
+            var history = await _productService.GetSupplierHistoryAsync();
+            return Ok(new { Status = 200, Success = true, Data = history });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Status = 500, Success = false, Message = ex.Message });
+        }
+    }
 }
