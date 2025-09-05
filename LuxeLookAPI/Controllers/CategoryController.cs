@@ -129,14 +129,14 @@ namespace LuxeLookAPI.Controllers
 
         // ✅ Add Brand
         [HttpPost("add-brand")]
-        public async Task<IActionResult> AddBrand( string brandName)
+        public async Task<IActionResult> AddBrand(AddBrandDTO dto)
         {
-            if (string.IsNullOrWhiteSpace(brandName))
+            if (string.IsNullOrWhiteSpace(dto.brandName))
                 return BadRequest(new { message = "Brand name is required." });
 
             try
             {
-                var brand = await _categoryService.AddBrandAsync(brandName);
+                var brand = await _categoryService.AddBrandAsync(dto.brandName);
                 return Ok(new { Status = 200, Success = true, Data = brand });
             }
             catch (Exception ex)

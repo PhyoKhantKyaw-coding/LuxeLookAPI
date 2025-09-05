@@ -461,13 +461,30 @@ public async Task<bool> AddToFavoriteAsync(AddToFavoriteDTO dto)
         // Get the order
         var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == dto.OrderId && o.ActiveFlag);
         if (order == null) return false;
+        if(dto.status == "Accept")
+        {
+            order.DeliveryId = userId;
+            order.Status = "delivering";
+            order.UpdatedAt = DateTime.UtcNow;
 
-        // Assign delivery
-        order.DeliveryId = userId;
-        order.Status = "delivering";
-        order.UpdatedAt = DateTime.UtcNow;
+        }
+        else if (dto.status == "Complete")
+        {
 
-        _context.Orders.Update(order);
+            order.DeliveryId = userId;
+            order.Status = "completed";
+            order.UpdatedAt = DateTime.UtcNow;
+        }
+        else
+        {
+
+            order.DeliveryId = userId;
+            order.Status = "reject";
+            order.UpdatedAt = DateTime.UtcNow;
+        }
+            // Assign delivery
+
+            _context.Orders.Update(order);
         var saved = await _context.SaveChangesAsync() > 0;
 
         if (saved)
