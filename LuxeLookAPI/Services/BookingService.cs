@@ -35,7 +35,7 @@ namespace LuxeLookAPI.Services
                 BookingDate = dto.BookingDate
             };
 
-            _context.Bookings.Add(booking);
+            _context.Booking.Add(booking);
             _context.SaveChanges();
 
             return true;
@@ -46,7 +46,7 @@ namespace LuxeLookAPI.Services
         {
             var (userId, _, _) = _tokenReader.GetUserFromContext();
 
-            var result = (from b in _context.Bookings
+            var result = (from b in _context.Booking
                           join d in _context.Doctor on b.DoctorId equals d.DoctorId
                           join u in _context.Users on b.UserId equals u.UserId // if you have Users table
                           where b.UserId == userId
