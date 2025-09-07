@@ -131,6 +131,44 @@ public class ProductService
                     }).ToList()
             }).ToListAsync();
     }
+    public async Task<List<GetProductDTO>> GetProductsWithCatInstance(Guid catId)
+    {
+        return await _context.Products
+            .Where(p => p.ActiveFlag == true &&
+                        _context.CategoryInstances.Any(ci => ci.CatInstanceId == p.CatInstanceId && ci.CatId == catId))
+            .Select(p => new GetProductDTO
+            {
+                ProductId = p.ProductId,
+                ProductName = p.ProductName,
+                ProductDescription = p.ProductDescription,
+                StockQTY = p.StockQTY,
+                Cost = p.Cost,
+                Price = p.Price,
+                ProductImageUrl = p.ProductImageUrl,
+
+                // join category instance
+                CatInstanceName = _context.CategoryInstances
+                    .Where(ci => ci.CatInstanceId == p.CatInstanceId)
+                    .Select(ci => ci.CatInstanceName)
+                    .FirstOrDefault(),
+
+                // join brand
+                BrandName = _context.Brands
+                    .Where(b => b.BrandId == p.BrandId)
+                    .Select(b => b.BrandName)
+                    .FirstOrDefault(),
+
+                // join supplier (if you have Supplier table, update accordingly)
+                SupplierName = _context.Users
+                    .Where(u => u.UserId == p.SupplierId) // 🔹 adjust this if Supplier is mapped differently
+                    .Select(u => u.UserName)
+                    .FirstOrDefault(),
+
+                // join currency (if you have Currency table, adjust accordingly)
+                CurrencySymbol = "MMK" // or query from currency table if exists
+            })
+            .ToListAsync();
+    }
 
     // 4. Add Product (with SupplierId)
     public async Task<bool> AddProductAsync(AddProductDTO dto)

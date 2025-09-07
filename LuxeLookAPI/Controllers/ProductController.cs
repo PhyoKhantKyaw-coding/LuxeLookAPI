@@ -115,7 +115,37 @@ public class ProductController : ControllerBase
             });
         }
     }
+    [HttpGet("getproductbyCatInstance/{catId}")]
+    public async Task<IActionResult> GetProductsWithCat(Guid catId)
+    {
+        try
+        {
+            var products = await _productService.GetProductsWithCatInstance(catId);
+            if (products == null || !products.Any())
+                return Ok(new ResponseDTO
+                {
+                    Status = APIStatus.Successful,
+                    Message = Messages.NoData,
+                    Data = null
+                });
 
+            return Ok(new ResponseDTO
+            {
+                Status = APIStatus.Successful,
+                Message = Messages.Result,
+                Data = products
+            });
+        }
+        catch
+        {
+            return StatusCode(500, new ResponseDTO
+            {
+                Status = APIStatus.SystemError,
+                Message = Messages.ErrorWhileFetchingData,
+                Data = null
+            });
+        }
+    }
     // GET: api/Product/{id}
     [HttpGet("{id}")]
     public async Task<IActionResult> GetProductById(Guid id)
