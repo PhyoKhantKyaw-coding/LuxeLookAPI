@@ -1,18 +1,24 @@
 ﻿using LuxeLookAPI.Models;
 using LuxeLookAPI.Share;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Net.Http.Headers;
+using System;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Bind AppSettings
+// ✅ Bind AppSettings
 var appSettings = new AppSettings();
 builder.Configuration.GetSection("AppSettings").Bind(appSettings);
 builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
 ServiceManager.SetServiceInfo(builder.Services, appSettings);
+
+// ✅ Register DbContext with Pomelo MySQL
+builder.Services.AddDbContext<DataContext>(options =>
+    options.UseMySql(appSettings.ConnectionString, ServerVersion.AutoDetect(appSettings.ConnectionString)));
 
 // Add services
 builder.Services.AddControllers();
@@ -20,6 +26,9 @@ builder.Services.AddSingleton<CommonTokenGenerator>();
 builder.Services.AddHttpContextAccessor();
 
 // ✅ Add Authentication with JWT Bearer
+var jwtSection = builder.Configuration.GetSection("Jwt");
+var secretKey = jwtSection["Secret"];
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -27,7 +36,6 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
-    var secretKey = builder.Configuration["Jwt:Secret"];
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
@@ -35,8 +43,8 @@ builder.Services.AddAuthentication(options =>
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
 
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
+        ValidIssuer = jwtSection["Issuer"],
+        ValidAudience = jwtSection["Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
     };
 });
@@ -81,12 +89,14 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(
-        Path.Combine(Directory.GetCurrentDirectory(),"wwwroot", "images")),
-    RequestPath = "/api/images" // Match the URL path
+        Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images")),
+    RequestPath = "/api/images"
 });
+
 // Pipeline
 if (app.Environment.IsDevelopment())
 {
@@ -97,7 +107,6 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseCors("MyAllowSpecificOrigins");
 
-// ✅ Add Authentication + Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
