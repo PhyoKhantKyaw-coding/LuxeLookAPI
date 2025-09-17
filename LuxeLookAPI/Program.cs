@@ -17,8 +17,8 @@ builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSet
 ServiceManager.SetServiceInfo(builder.Services, appSettings);
 
 // ✅ Register DbContext with Pomelo MySQL
-builder.Services.AddDbContext<DataContext>(options =>
-    options.UseMySql(appSettings.ConnectionString, ServerVersion.AutoDetect(appSettings.ConnectionString)));
+//builder.Services.AddDbContext<DataContext>(options =>
+//    options.UseMySql(appSettings.ConnectionString, ServerVersion.AutoDetect(appSettings.ConnectionString)));
 
 // Add services
 builder.Services.AddControllers();

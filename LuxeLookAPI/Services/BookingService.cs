@@ -78,7 +78,9 @@ namespace LuxeLookAPI.Services
                 storeposition = dto.StorePosition,
                 storeName = dto.StoreName,
                 phoneNumber = dto.PhoneNumber,
-                email = dto.Email
+                email = dto.Email,
+                ProfileImageUrl = dto.ProfileImageUrl
+
             };
 
             _context.Doctor.Add(doctor);

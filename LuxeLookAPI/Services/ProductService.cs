@@ -60,6 +60,93 @@ public class ProductService
             };
         }).ToList();
     }
+    public async Task<List<GetProductDTO>> GetAllProductsAsync1(
+    int pageNumber,
+    int pageSize,
+    string language,
+    string status // new param
+)
+    {
+        var query = from p in _context.Products
+                    join c in _context.CategoryInstances
+                        on p.CatInstanceId equals c.CatInstanceId into pc
+                    from c in pc.DefaultIfEmpty()
+                    join b in _context.Brands
+                        on p.BrandId equals b.BrandId into pb
+                    from b in pb.DefaultIfEmpty()
+                    join s in _context.Suppliers
+                        on p.SupplierId equals s.SupplierId into ps
+                    from s in ps.DefaultIfEmpty()
+                    where p.ActiveFlag == true
+                    select new
+                    {
+                        p,
+                        CatInstanceName = c != null ? c.CatInstanceName : null,
+                        BrandName = b != null ? b.BrandName : null,
+                        SupplierName = s != null ? s.SupplierName : null
+                    };
+
+        // apply status condition
+        switch (status?.ToLower())
+        {
+            case "newarrivals":
+                query = query.OrderByDescending(x => x.p.CreatedAt);
+                break;
+
+            case "bestseller":
+                query = from q in query
+                        join od in _context.OrderDetails
+                            on q.p.ProductId equals od.ProductId
+                        group new { q, od } by new
+                        {
+                            q.p,
+                            q.CatInstanceName,
+                            q.BrandName,
+                            q.SupplierName
+                        } into g
+                        orderby g.Sum(x => x.od.Qty) descending
+                        select new
+                        {
+                            p = g.Key.p,
+                            g.Key.CatInstanceName,
+                            g.Key.BrandName,
+                            g.Key.SupplierName
+                        };
+                break;
+
+            case "special":
+            default:
+                // keep as is (all active products)
+                query = query.OrderByDescending(x => x.p.CreatedAt);
+                break;
+        }
+
+        var products = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return products.Select(x =>
+        {
+            var (convertedCost, symbol) = CurrencyHelper.Convert(language, x.p.Cost ?? 0);
+            var (convertedPrice, _) = CurrencyHelper.Convert(language, x.p.Price ?? 0);
+
+            return new GetProductDTO
+            {
+                ProductId = x.p.ProductId,
+                CatInstanceName = x.CatInstanceName,
+                BrandName = x.BrandName,
+                SupplierName = x.SupplierName,
+                ProductName = x.p.ProductName,
+                ProductDescription = x.p.ProductDescription,
+                StockQTY = x.p.StockQTY,
+                Cost = convertedCost,
+                Price = convertedPrice,
+                CurrencySymbol = symbol,
+                ProductImageUrl = x.p.ProductImageUrl
+            };
+        }).ToList();
+    }
 
     // 2. Get products by Category Id with pagination + currency + supplier
     public async Task<GetProductByCatIdDTO> GetProductsByCatIdAsync(Guid catId, int pageNumber, int pageSize, string language)

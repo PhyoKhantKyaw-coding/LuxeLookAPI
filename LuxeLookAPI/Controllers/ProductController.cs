@@ -16,6 +16,38 @@ public class ProductController : ControllerBase
     }
 
     // GET: api/Product
+    [HttpGet("bystatus")]
+    public async Task<IActionResult> GetAllProductsbystatus(int pageNumber = 1, int pageSize = 10, string language = "us", string status ="")
+    {
+        try
+        {
+            var products = await _productService.GetAllProductsAsync1(pageNumber, pageSize, language, status);
+
+            if (products == null || !products.Any())
+                return Ok(new ResponseDTO
+                {
+                    Status = APIStatus.Successful,
+                    Message = Messages.NoData,
+                    Data = null
+                });
+
+            return Ok(new ResponseDTO
+            {
+                Status = APIStatus.Successful,
+                Message = Messages.Result,
+                Data = products
+            });
+        }
+        catch
+        {
+            return StatusCode(500, new ResponseDTO
+            {
+                Status = APIStatus.SystemError,
+                Message = Messages.ErrorWhileFetchingData,
+                Data = null
+            });
+        }
+    }
     [HttpGet]
     public async Task<IActionResult> GetAllProducts(int pageNumber = 1, int pageSize = 10, string language = "us")
     {
@@ -48,7 +80,6 @@ public class ProductController : ControllerBase
             });
         }
     }
-
     // GET: api/Product/byCategory/{catId}
     [HttpGet("byCategory/{catId}")]
     public async Task<IActionResult> GetProductsByCategory(Guid catId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string language = "us")
